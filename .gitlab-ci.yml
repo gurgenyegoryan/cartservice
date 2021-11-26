@@ -22,6 +22,6 @@ build:
     - echo $DOCKER_REGISTRY
     - aws ecr get-login-password | docker login --username AWS --password-stdin $DOCKER_REGISTRY
   script:
-    - cd /src
+    - cd src
     - docker build -t $DOCKER_REGISTRY:$CI_PROJECT_NAME .
     - docker push $DOCKER_REGISTRY:$CI_PROJECT_NAME
