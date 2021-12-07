@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY /src/cartservice.csproj .
 RUN dotnet restore cartservice.csproj -r linux-musl-x64
-COPY /src/* ./
+ADD /src .
 RUN dotnet publish cartservice.csproj -p:PublishSingleFile=true \
     -r linux-musl-x64 \
     --self-contained true \
