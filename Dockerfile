@@ -3,9 +3,9 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0.402 AS compiler
 
 WORKDIR /app
 
-COPY cartservice.csproj .
+COPY /src/cartservice.csproj .
 RUN dotnet restore cartservice.csproj -r linux-musl-x64
-COPY . .
+COPY /src .
 RUN dotnet publish cartservice.csproj -p:PublishSingleFile=true \
     -r linux-musl-x64 \
     --self-contained true \
