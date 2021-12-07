@@ -1,27 +1,25 @@
 stages:
   - build
 
-variables:
-  CI_GROUP_NAME: telecomproject
-  AWS_DEFAULT_REGION: eu-west-1
-  AWS_ACCESS_KEY_ID: AKIAUNC467SMOH2XM5NF
-  AWS_SECRET_ACCESS_KEY: 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
-
 build:
   stage: build
   image: 
-    name: docker:latest
+    name: $CI_REGISTRY/telecomproject/cluster/docker:latest
   services:
     - docker:19-dind
   before_script:
-    - apk add --no-cache curl jq python3 py3-pip
-    - pip install awscli
-    - aws ecr describe-repositories --repository-names $CI_GROUP_NAME >> /dev/null || aws ecr create-repository --repository-name $CI_GROUP_NAME --region $AWS_DEFAULT_REGION
-  #  - export DOCKER_REGISTRY=`aws ecr describe-repositories --repository-names $CI_GROUP_NAME | grep "repositoryUri" | awk -F ":\ " '{print $2}' | awk '{ print substr( $0, 1, length($0) -1 ) }' | awk '{print substr($0, 2, length($0) - 2)}'` 
-    - export DOCKER_REGISTRY=`aws ecr describe-repositories --repository-names telecomproject | jq -r .repositories[].repositoryUri`
-    - echo $DOCKER_REGISTRY
-    - aws ecr get-login-password | docker login --username AWS --password-stdin $DOCKER_REGISTRY
+    - aws ecr create-repository --repository-name $CI_PROJECT_NAME --region $AWS_DEFAULT_REGION >> /dev/null || true #pushAWS
+    - export AWS_REGISTRY=`aws ecr describe-repositories --repository-names $CI_PROJECT_NAME --query repositories[].repositoryUri --output text` #pushAWS
+    - aws ecr get-login-password | docker login -u AWS --password-stdin $AWS_REGISTRY #pushAWS
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY #pushGL
   script:
-    - cd src
-    - docker build -t $DOCKER_REGISTRY:$CI_PROJECT_NAME .
-    - docker push $DOCKER_REGISTRY:$CI_PROJECT_NAME
+    - docker build -t $AWS_REGISTRY:latest . #build
+    - docker image tag $AWS_REGISTRY:latest $AWS_REGISTRY:$CI_COMMIT_SHORT_SHA #set version in latest image
+
+    - docker image tag $AWS_REGISTRY:latest $CI_REGISTRY_IMAGE:latest #tag image for gitlab repo
+    - docker image tag $CI_REGISTRY_IMAGE:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA #set version in latest image
+    
+    - docker push $AWS_REGISTRY:$CI_COMMIT_SHORT_SHA #pushAWS-versions
+    - docker push $AWS_REGISTRY:latest #pushAWS-latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA #pushGL-versions
+    - docker push $CI_REGISTRY_IMAGE:latest #pushGL-latest
