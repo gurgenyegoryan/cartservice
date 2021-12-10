@@ -1,25 +1,4 @@
-stages:
-  - build
-
-build:
-  stage: build
-  image: 
-    name: $CI_REGISTRY/telecomproject/cluster/docker:latest
-  services:
-    - docker:19-dind
-  before_script:
-    - aws ecr create-repository --repository-name $CI_PROJECT_NAME --region $AWS_DEFAULT_REGION >> /dev/null || true #pushAWS
-    - export AWS_REGISTRY=`aws ecr describe-repositories --repository-names $CI_PROJECT_NAME --query repositories[].repositoryUri --output text` #pushAWS
-    - aws ecr get-login-password | docker login -u AWS --password-stdin $AWS_REGISTRY #pushAWS
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY #pushGL
-  script:
-    - docker build -t $AWS_REGISTRY:latest . #build
-    - docker image tag $AWS_REGISTRY:latest $AWS_REGISTRY:$CI_COMMIT_SHORT_SHA #set version in latest image
-
-    - docker image tag $AWS_REGISTRY:latest $CI_REGISTRY_IMAGE:latest #tag image for gitlab repo
-    - docker image tag $CI_REGISTRY_IMAGE:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA #set version in latest image
-    
-    - docker push $AWS_REGISTRY:$CI_COMMIT_SHORT_SHA #pushAWS-versions
-    - docker push $AWS_REGISTRY:latest #pushAWS-latest
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA #pushGL-versions
-    - docker push $CI_REGISTRY_IMAGE:latest #pushGL-latest
+include:
+  - project: 'telecomproject/resources'
+    ref: $INCLUDE_BRANCH
+    file: '/.gl-templates/microservices.gitlab-ci.yml'
