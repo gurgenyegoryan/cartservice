@@ -2,3 +2,7 @@ include:
   - project: 'telecomproject/resources'
     ref: $INCLUDE_BRANCH
     file: '/.gl-templates/microservices.gitlab-ci.yml'
+
+test:
+  extends: .test-c#
+  
